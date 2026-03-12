@@ -1,0 +1,103 @@
+version: 1
+
+graph: path/to/graph.dot
+task: "Short description of what this run accomplishes"
+
+repo:
+  path: /absolute/path/to/target/repo
+
+cxdb:
+  binary_addr: 127.0.0.1:9009
+  http_base_url: http://127.0.0.1:9010
+  autostart:
+    enabled: true
+    command: ["/absolute/path/to/kilroy/scripts/start-cxdb.sh"]
+    wait_timeout_ms: 20000
+    poll_interval_ms: 250
+    ui:
+      enabled: true
+      command: ["/absolute/path/to/kilroy/scripts/start-cxdb-ui.sh"]
+      url: "http://127.0.0.1:9020"
+
+llm:
+  cli_profile: real
+  providers:
+    openai:
+      backend: cli
+    anthropic:
+      backend: api
+    google:
+      backend: api
+
+modeldb:
+  openrouter_model_info_path: /absolute/path/to/kilroy/internal/attractor/modeldb/pinned/openrouter_models.json
+  openrouter_model_info_update_policy: on_run_start
+  openrouter_model_info_url: https://openrouter.ai/api/v1/models
+  openrouter_model_info_fetch_timeout_ms: 5000
+
+git:
+  require_clean: false
+  run_branch_prefix: attractor/run
+  commit_per_node: true
+
+inputs:
+  materialize:
+    enabled: true
+    # Scratch imports are explicit. Root .ai is not implicitly ingested.
+    # Add run-scoped scratch patterns when pipeline prompts consume them:
+    # - pattern: ".ai/runs/$KILROY_RUN_ID/**/*.md"
+    #   required: false
+    imports:
+      - pattern: "docs/**/*.md"
+        required: false
+    fan_in:
+      promote_run_scoped: []
+    follow_references: true
+    infer_with_llm: false
+    # To enable inference, set both fields explicitly:
+    # llm_provider: openai
+    # llm_model: gpt-5
+
+# artifact_policy: language-specific env and checkpoint config.
+# The engine applies only what is declared here — no implicit defaults.
+# See skills/shared/profile_default_env.yaml for per-language reference values.
+#
+# Secrets: if the project needs API keys at build/test time, declare them
+# here with an empty value.  The engine substitutes the real value from
+# the OS environment (loaded from .env at startup).  Declared keys bypass
+# the agent shell's sensitive-name deny list.
+# Example:
+#   overrides:
+#     generic:
+#       GEMINI_API_KEY: ""    # value from .env / shell env
+artifact_policy:
+  profiles: ["rust"]
+  env:
+    managed_roots:
+      tool_cache_root: "managed"
+    overrides:
+      rust:
+        CARGO_HOME: "{managed_roots.tool_cache_root}/cargo-home"
+        RUSTUP_HOME: "{managed_roots.tool_cache_root}/rustup-home"
+        CARGO_TARGET_DIR: "{managed_roots.tool_cache_root}/cargo-target"
+  checkpoint:
+    exclude_globs:
+      - "**/.cargo-target*/**"
+      - "**/.cargo_target*/**"
+      - "**/.wasm-pack/**"
+      - "**/.tmpbuild/**"
+
+runtime_policy:
+  stage_timeout_ms: 0
+  stall_timeout_ms: 600000
+  stall_check_interval_ms: 5000
+  max_llm_retries: 6
+
+preflight:
+  prompt_probes:
+    enabled: true
+    transports: [complete, stream]
+    timeout_ms: 15000
+    retries: 1
+    base_delay_ms: 500
+    max_delay_ms: 5000

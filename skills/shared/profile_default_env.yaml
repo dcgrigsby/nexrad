@@ -1,0 +1,30 @@
+version: 1
+
+# Language-specific environment variable defaults for artifact_policy.env.overrides.
+#
+# Skills (create-runfile, create-dotfile) reference this file when populating
+# run config artifact_policy sections.  The engine does NOT read this file; it
+# only applies whatever env overrides appear in the run config YAML.
+#
+# Values use {managed_roots.<key>} templates that the engine resolves at run start
+# against artifact_policy.env.managed_roots in the run config.
+#
+# Parity with allowedArtifactPolicyProfiles enforced by
+# TestProfileDefaultEnv_ProfilesMatchAllowedSet in
+# internal/attractor/engine/profile_default_env_parity_test.go.
+
+profiles:
+  generic: {}
+
+  rust:
+    CARGO_HOME: "{managed_roots.tool_cache_root}/cargo-home"
+    RUSTUP_HOME: "{managed_roots.tool_cache_root}/rustup-home"
+    CARGO_TARGET_DIR: "{managed_roots.tool_cache_root}/cargo-target"
+
+  go:
+    GOPATH: "{managed_roots.tool_cache_root}/go-path"
+    GOMODCACHE: "{managed_roots.tool_cache_root}/go-path/pkg/mod"
+
+  node: {}
+  python: {}
+  java: {}
