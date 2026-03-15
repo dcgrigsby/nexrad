@@ -26,7 +26,7 @@ Parses a Level II file and produces a PLY point cloud with all elevation tilts.
 - Output: PLY file (ASCII or binary) with position + color per point
 - Processing steps:
   1. Parse Level II archive (binary format with compressed messages per tilt)
-  2. For each gate in each radial in each tilt: convert polar (azimuth, range, elevation) to Cartesian (x, y, z) using standard radar geometry (earth curvature + beam refraction)
+  2. For each gate in each radial in each tilt: convert polar (azimuth, range, elevation) to Cartesian (x, y, z) using standard radar geometry (earth curvature + beam refraction). Origin (0,0,0) is the radar antenna — the point cloud is centered on the radar site.
   3. Filter out gates with no data (most of the volume is empty)
   4. Map reflectivity (dBZ) values to colors using the standard NWS color scale
 - Dependencies: `pyart` (Py-ART) for parsing and coordinate transforms

@@ -69,7 +69,7 @@
 | AC-3.2 | Output PLY file has a valid header with vertex element declaring x, y, z (float) and red, green, blue (uchar) properties | IT-2, IT-3 |
 | AC-3.3 | All elevation tilts from the volume scan are included in the output | IT-2 |
 | AC-3.4 | Gates with no reflectivity data are filtered out (not written to PLY) | IT-3 |
-| AC-3.5 | Cartesian coordinates use standard radar geometry (earth curvature + beam refraction via Py-ART) | IT-2 |
+| AC-3.5 | Cartesian coordinates use standard radar geometry (earth curvature + beam refraction via Py-ART) with origin (0,0,0) at the radar antenna | IT-2 |
 | AC-3.6 | Colors map dBZ values to the standard NWS reflectivity color table | IT-2 |
 | AC-3.7 | Active storm scan produces >100K vertices in the PLY | IT-2 |
 | AC-3.8 | Clear-air scan produces <10K vertices in the PLY | IT-3 |
