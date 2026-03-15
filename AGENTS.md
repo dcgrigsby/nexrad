@@ -58,6 +58,48 @@ This repo includes local skills (for example under `skills/`) that should be tre
 
 In short: **use skills to design and operate pipelines outside the graph**, and **reference those skills from within node prompts** so the internal coding-agent loop can follow them.
 
+## Operating Model
+
+Work in this repo flows through three phases. **The product is always built by Kilroy.** Never use superpowers execution skills to implement product features directly.
+
+### Phase 1 — Requirements (Claude Code, superpowers)
+
+Understand what to build and make product decisions.
+
+- Use `brainstorming` (superpowers) to explore product intent with the human → produces spec / requirements doc
+
+### Phase 2 — Factory Design (Claude Code, Kilroy design skills)
+
+Translate requirements into a runnable pipeline. This is the Kilroy-intended design mechanism — not Claude Code execution.
+
+- `skills/build-dod` → spec → acceptance criteria + integration test scenarios
+- `skills/create-dotfile` → requirements + DoD → pipeline DOT graph
+- `skills/create-runfile` → DOT graph → `run.yaml` config
+- `skills/starting-a-project` → initialize target repo if needed
+
+### Phase 3 — Factory Execution (Kilroy runner)
+
+Run the pipeline. Failures feed back to Phase 2.
+
+- `skills/using-kilroy` → validate + run pipeline
+- `skills/investigating-kilroy-runs` → diagnose failures; repair DOT/runfile and re-run
+
+### Superpowers Skill Boundaries
+
+Claude Code ships with superpowers skills (brainstorming, writing-plans, executing-plans, etc.). Several of them can implement code directly — which is Kilroy's job. The rule:
+
+| Skill | Use in this repo | Never use for |
+|---|---|---|
+| `brainstorming` | Phase 1 — product intent and decisions | — |
+| `writing-plans` | Phases 1–2 — planning DOT/runfile/skill changes | Planning product features for direct Claude Code execution |
+| `executing-plans` | Phases 1–2 — factory meta-work only (repo setup, repairing DOT) | Product implementation |
+| `subagent-driven-development` | Phases 1–2 — factory meta-work only | Product implementation |
+| `dispatching-parallel-agents` | Phases 1–2 — parallel factory ops (e.g., fix multiple broken nodes) | Product feature work |
+| `test-driven-development` | Phases 1–2 — factory/infra code only | Product code (Kilroy's DoD handles this) |
+| `systematic-debugging` | Any phase — debugging pipeline setup | — |
+| `verification-before-completion` | Phase 2→3 — verifying pipeline setup before a run | — |
+| `using-git-worktrees` | Any phase — isolating factory changes | — |
+
 ## Agent Behavior and Safety
 
 - **Bias for clarity over cleverness**
