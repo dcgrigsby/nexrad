@@ -6,13 +6,18 @@ set -e
 trap 'echo "KILROY_VALIDATE_FAILURE: validate-test.sh crashed at line $LINENO"' EXIT
 
 RUN_ID="${KILROY_RUN_ID:-unknown}"
-EVIDENCE_ROOT=".ai/runs/${RUN_ID}/test-evidence/latest"
-# Canonical path always uses KILROY_RUN_ID if available (for verify_artifacts)
-if [ -n "$KILROY_RUN_ID" ] && [ "$KILROY_RUN_ID" != "unknown" ]; then
-  CANONICAL_EVIDENCE_ROOT=".ai/runs/${KILROY_RUN_ID}/test-evidence/latest"
-else
-  CANONICAL_EVIDENCE_ROOT="$EVIDENCE_ROOT"
+# If KILROY_RUN_ID is not in env, detect it from existing .ai/runs/ directories
+if [ "$RUN_ID" = "unknown" ] && [ -d ".ai/runs" ]; then
+  for _d in .ai/runs/*/; do
+    _name=$(basename "$_d")
+    if [ "$_name" != "unknown" ] && [ -d "$_d" ]; then
+      RUN_ID="$_name"
+      break
+    fi
+  done
 fi
+EVIDENCE_ROOT=".ai/runs/${RUN_ID}/test-evidence/latest"
+CANONICAL_EVIDENCE_ROOT="$EVIDENCE_ROOT"
 
 echo "=== [validate-test] Evidence root: $EVIDENCE_ROOT ==="
 
@@ -97,7 +102,7 @@ fi
 # ============================================================
 echo "=== [validate-test] IT-1: Fetch active storm (KTLX 2013-05-20) ==="
 
-STORM_FILE="/tmp/nexrad_test_ktlx_storm.gz"
+STORM_FILE="/tmp/nexrad_test_ktlx_storm.ar2v"
 
 set +e
 uv run nexrad-fetch KTLX 20130520_200000 --output "$STORM_FILE" \
@@ -111,7 +116,7 @@ if [ "$FETCH_EXIT" -ne 0 ]; then
   set +e
   uv run python3 -c "
 import pyart.testing, shutil, os
-src = pyart.testing.get_test_data('nexrad_archive')
+src = pyart.testing.NEXRAD_ARCHIVE_MSG31_COMPRESSED_FILE
 shutil.copy(src, '$STORM_FILE')
 print('pyart fixture fallback:', src, os.path.getsize(src), 'bytes')
 " >> "$EVIDENCE_ROOT/IT-1/fetch_stdout.log" 2>&1
@@ -231,7 +236,7 @@ fi
 # ============================================================
 echo "=== [validate-test] IT-3: Fetch + transform clear-air scan ==="
 
-CLEARAIR_FILE="/tmp/nexrad_test_klsx_clearair.gz"
+CLEARAIR_FILE="/tmp/nexrad_test_klsx_clearair.ar2v"
 CLEARAIR_PLY="/tmp/nexrad_test_klsx_clearair.ply"
 
 set +e
@@ -243,7 +248,7 @@ if [ ! -f "$CLEARAIR_FILE" ] || [ ! -s "$CLEARAIR_FILE" ]; then
   set +e
   uv run python3 -c "
 import pyart.testing, shutil, os
-src = pyart.testing.get_test_data('nexrad_archive')
+src = pyart.testing.NEXRAD_ARCHIVE_MSG31_COMPRESSED_FILE
 shutil.copy(src, '$CLEARAIR_FILE')
 print('pyart fixture fallback (clear-air):', src, os.path.getsize(src), 'bytes')
 " >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
@@ -412,13 +417,6 @@ manifest = {
 json.dump(manifest, open(out, "w"), indent=2)
 print("Manifest written to: " + out)
 PYEOF
-
-# Ensure evidence is also at canonical run-scoped path (verify_artifacts checks KILROY_RUN_ID path)
-if [ "$CANONICAL_EVIDENCE_ROOT" != "$EVIDENCE_ROOT" ]; then
-  mkdir -p "$CANONICAL_EVIDENCE_ROOT"
-  cp -rp "$EVIDENCE_ROOT/." "$CANONICAL_EVIDENCE_ROOT/"
-  echo "=== [validate-test] Copied evidence to canonical path: $CANONICAL_EVIDENCE_ROOT ==="
-fi
 
 trap - EXIT
 echo "=== [validate-test] All non-UI scenarios complete. IT-4/IT-5 require browser verification. ==="
