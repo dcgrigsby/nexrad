@@ -1,6 +1,27 @@
+# Secrets
 .env.local
+.env
+
+# Python
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Node / Viewer
 node_modules/
+viewer/dist/
+
+# Kilroy
 .ai/
+
+# NEXRAD data files (large binaries)
+*.gz
+*.ply
+
+# OS
+.DS_Store
