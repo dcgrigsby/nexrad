@@ -247,7 +247,11 @@ src = pyart.testing.get_test_data('nexrad_archive')
 shutil.copy(src, '$CLEARAIR_FILE')
 print('pyart fixture fallback (clear-air):', src, os.path.getsize(src), 'bytes')
 " >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
+  CLEARAIR_FIXTURE_EXIT=$?
   set -e
+  if [ "$CLEARAIR_FIXTURE_EXIT" -eq 0 ] && [ -f "$CLEARAIR_FILE" ] && [ -s "$CLEARAIR_FILE" ]; then
+    echo "[IT-3] fetch: PASS via pyart fixture"
+  fi
 fi
 
 if [ -f "$CLEARAIR_FILE" ]; then
