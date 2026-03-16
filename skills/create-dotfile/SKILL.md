@@ -32,8 +32,9 @@ Model defaults source:
 
 ## Workflow
 
-0. Fetch the current model list (required before writing any model_stylesheet).
+0. Fetch the current model list and performance data (required before writing any model_stylesheet).
 
+**Step 0a: Get canonical model IDs.**
 Run:
     kilroy attractor modeldb suggest
 
@@ -41,6 +42,15 @@ Capture the output. Use ONLY the model IDs listed in the output. Do not use
 model IDs from memory — they go stale. If the command is unavailable, default
 to: `claude-sonnet-4.6` (anthropic), `gemini-3-flash-preview` (google),
 `gpt-4.1` (openai).
+
+**Step 0b: Consult the weather report for model selection.**
+Fetch https://factory.strongdm.ai/weather-report to get current empirical
+performance data and per-use-case recommendations (implementation, architecture
+review, planning, security review, etc.). Use the weather report's recommendations
+to assign models to pipeline roles (.hard, .verify, .branch-a/b/c), then validate
+the chosen model IDs against the modeldb suggest output from step 0a. The weather
+report takes precedence over generic defaults when it has a recommendation for a
+given role.
 
 1. Determine mode and hard constraints.
 - If non-interactive/programmatic, do not ask follow-up questions.
