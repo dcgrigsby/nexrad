@@ -178,7 +178,7 @@ digraph nexrad_pointcloud_v1 {
         verify_artifacts [
             shape=parallelogram,
             max_retries=0,
-            tool_command="sh -c 'MANIFEST=\".ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json\" && test -f \"$MANIFEST\" && echo \"Manifest exists\" && python3 -c \"import json,sys; m=json.load(open(sys.argv[1])); ids=set(s[\\\"id\\\"] for s in m[\\\"scenarios\\\"]); required={\\\"IT-1\\\",\\\"IT-2\\\",\\\"IT-3\\\",\\\"IT-4\\\",\\\"IT-5\\\",\\\"IT-6\\\",\\\"IT-7\\\"}; missing=required-ids; assert not missing, f\\\"Missing scenarios: {missing}\\\"; print(\\\"All scenario IDs present\\\")\" \"$MANIFEST\" || { echo \"KILROY_VALIDATE_FAILURE: manifest.json missing or incomplete — postmortem must ensure test evidence is written\"; exit 1; }'"
+            tool_command="sh scripts/validate-artifacts.sh || { echo 'KILROY_VALIDATE_FAILURE: validate-artifacts.sh missing or failed — postmortem must write scripts/validate-artifacts.sh'; exit 1; }"
         ]
         check_artifacts [shape=diamond, label="Artifacts OK?"]
 
