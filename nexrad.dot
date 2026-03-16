@@ -1,0 +1,350 @@
+digraph nexrad_pointcloud {
+    graph [
+        goal="Build three CLI tools for NEXRAD 3D point cloud visualization: (1) nexrad-fetch downloads Level II archive files from s3://noaa-nexrad-level2/ given a site code and date/time, (2) nexrad-transform parses Level II data via Py-ART and outputs colored PLY point clouds with all elevation tilts using standard radar geometry and NWS reflectivity colors, (3) nexrad-viewer renders PLY files as interactive 3D point clouds in the browser using Three.js. Environment uses direnv + uv (Python) and npm (JS). API keys for LLM providers are stored in .env.local (gitignored) and loaded via direnv. See docs/plans/2026-03-15-nexrad-pointcloud-v1-design.md for full spec and docs/plans/2026-03-15-nexrad-pointcloud-v1-dod.md for acceptance criteria and integration test scenarios.",
+        rankdir=LR,
+        default_max_retry=3,
+        retry_target="implement_repair",
+        fallback_retry_target="debate_consolidate",
+        provenance_version="1",
+        loop_restart_persist_keys="last_failing_acs",
+        loop_restart_signature_limit=5,
+        model_stylesheet="
+            * { llm_model: claude-sonnet-4.6; llm_provider: anthropic; }
+            .hard { llm_model: gpt-5.3-codex; llm_provider: openai; }
+            .branch-a { llm_model: claude-opus-4.6; llm_provider: anthropic; }
+            .branch-b { llm_model: gpt-5.3-codex; llm_provider: openai; }
+            .branch-c { llm_model: gpt-5.4; llm_provider: openai; }
+        "
+    ]
+
+    exit [shape=Msquare, label="Exit"]
+
+    // =========================================================================
+    // Bootstrap
+    // =========================================================================
+    subgraph cluster_bootstrap {
+        label="Bootstrap"
+
+        start [shape=Mdiamond, label="Start"]
+
+        check_toolchain [
+            shape=parallelogram,
+            max_retries=0,
+            tool_command="command -v python3 && python3 --version && command -v uv && uv --version && command -v node && node --version && command -v npm && npm --version && command -v direnv && direnv --version && echo 'All toolchain checks passed' || { echo 'TOOLCHAIN MISSING: need python3, uv, node, npm, direnv'; exit 1; }"
+        ]
+
+        expand_spec [
+            shape=box,
+            auto_status=true,
+            prompt="You are the spec expansion node for a NEXRAD 3D point cloud visualization project.\n\nYour task: Create the canonical spec at .ai/runs/$KILROY_RUN_ID/spec.md by reading the existing project spec and reference materials.\n\nSteps:\n1. Read docs/plans/2026-03-15-nexrad-pointcloud-v1-design.md (the authoritative design spec)\n2. Read the reference specs in docs/specs/:\n   - NEXRAD-Level-II-ICD.md\n   - PYART_API_REFERENCE.md\n   - PLY_FORMAT_SPECIFICATION.md\n   - NWS_REFLECTIVITY_COLOR_TABLE.md\n3. Read docs/NEXRAD_TEST_CASES.md for test scan details\n4. Write .ai/runs/$KILROY_RUN_ID/spec.md containing:\n   - The full design spec content (verbatim)\n   - A 'Reference Materials Summary' section listing key details from each spec doc that implementers will need\n   - Scope, constraints, assumptions, acceptance criteria summary, verification approach, non-goals\n\nDo NOT rewrite or editorialize the design spec. Copy it verbatim and add the reference summary.\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+
+        check_dod [
+            shape=box,
+            label="DoD exists?",
+            prompt="Check whether an adequate Definition of Done exists for this project.\n\nSteps:\n1. Check if docs/plans/2026-03-15-nexrad-pointcloud-v1-dod.md exists and has substantive content\n2. If it exists, verify it covers: scope, deliverables, acceptance criteria (AC-1 through AC-5 groups), integration test scenarios (IT-1 through IT-7), user-facing message inventory, test evidence contract\n3. If adequate, copy it to .ai/runs/$KILROY_RUN_ID/definition_of_done.md and write status: {\"status\":\"has_dod\"}\n4. If missing or inadequate, write status: {\"status\":\"needs_dod\"}\n\nWrite status to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nFor failure: include failure_reason, failure_class."
+        ]
+    }
+
+    // =========================================================================
+    // DoD Fanout (skipped if DoD exists)
+    // =========================================================================
+    subgraph cluster_dod {
+        label="DoD Fanout"
+        node [shape=box]
+
+        dod_fanout [shape=component, label="DoD Fan-Out"]
+
+        dod_a [
+            class="branch-a",
+            prompt="Propose a Definition of Done for the NEXRAD 3D point cloud viewer project.\n\nRead .ai/runs/$KILROY_RUN_ID/spec.md for the full project spec.\n\nThe DoD must be outcomes and evidence, not a plan. Each item must be verifiable (pass/fail). Do not prescribe implementation approach.\n\nInclude: scope (in/out), deliverables table, acceptance criteria grouped by concern (environment, fetch, transform, viewer, integration), integration test scenarios with evidence contracts, user-facing message inventory.\n\nWrite output to .ai/runs/$KILROY_RUN_ID/dod_a.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        dod_b [
+            class="branch-b",
+            prompt="Propose a Definition of Done for the NEXRAD 3D point cloud viewer project.\n\nRead .ai/runs/$KILROY_RUN_ID/spec.md for the full project spec.\n\nThe DoD must be outcomes and evidence, not a plan. Each item must be verifiable (pass/fail). Do not prescribe implementation approach.\n\nInclude: scope (in/out), deliverables table, acceptance criteria grouped by concern (environment, fetch, transform, viewer, integration), integration test scenarios with evidence contracts, user-facing message inventory.\n\nWrite output to .ai/runs/$KILROY_RUN_ID/dod_b.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        dod_c [
+            class="branch-c",
+            prompt="Propose a Definition of Done for the NEXRAD 3D point cloud viewer project.\n\nRead .ai/runs/$KILROY_RUN_ID/spec.md for the full project spec.\n\nThe DoD must be outcomes and evidence, not a plan. Each item must be verifiable (pass/fail). Do not prescribe implementation approach.\n\nInclude: scope (in/out), deliverables table, acceptance criteria grouped by concern (environment, fetch, transform, viewer, integration), integration test scenarios with evidence contracts, user-facing message inventory.\n\nWrite output to .ai/runs/$KILROY_RUN_ID/dod_c.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+
+        consolidate_dod [
+            auto_status=true,
+            prompt="Synthesize the three DoD proposals into a single consensus Definition of Done.\n\nRead branch outputs: check parallel_results.json for worktree paths, then read dod_a.md, dod_b.md, dod_c.md from those worktrees. If parallel_results.json is missing, read .ai/runs/$KILROY_RUN_ID/dod_a.md, dod_b.md, dod_c.md from the current worktree.\n\nAlso read .ai/runs/$KILROY_RUN_ID/spec.md for context.\n\nResolve contradictions. Ensure coverage of: scope, deliverables, acceptance criteria, integration test scenarios, message inventory, test evidence contract.\n\nWrite consensus to .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+    }
+
+    // =========================================================================
+    // Planning Fanout
+    // =========================================================================
+    subgraph cluster_planning {
+        label="Planning Fanout"
+        node [shape=box]
+
+        plan_fanout [shape=component, label="Plan Fan-Out"]
+
+        plan_a [
+            class="branch-a",
+            prompt="Create an implementation plan for the NEXRAD 3D point cloud viewer project.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/spec.md (project spec)\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (acceptance criteria and test scenarios)\n- If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, incorporate its lessons\n\nThe plan must cover ALL deliverables and acceptance criteria from the DoD.\n\nProject specifics to plan for:\n- Environment: direnv + uv for Python (pyproject.toml), npm for JS viewer (viewer/package.json). API keys in .env.local (gitignored), loaded via .envrc.\n- Fetch tool (src/nexrad_fetch/): Python CLI using boto3 to download Level II files from s3://noaa-nexrad-level2/.\n- Transform tool (src/nexrad_transform/): Python CLI using Py-ART to parse Level II -> PLY point cloud. All elevation tilts, NWS color mapping, gate-center point placement.\n- Viewer (viewer/): HTML/JS with Three.js PLYLoader + OrbitControls.\n- Validation scripts: must produce scripts/validate-build.sh, validate-fmt.sh, validate-test.sh, validate-artifacts.sh as committed deliverables.\n- Test evidence contract per DoD.\n\nWrite plan to .ai/runs/$KILROY_RUN_ID/plan_a.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        plan_b [
+            class="branch-b",
+            prompt="Create an implementation plan for the NEXRAD 3D point cloud viewer project.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, incorporate its lessons\n\nThe plan must cover ALL deliverables and acceptance criteria from the DoD.\n\nProject specifics: direnv + uv (Python), npm (JS), boto3 for S3, Py-ART for radar, Three.js for viewer. Validation scripts as committed deliverables. Test evidence contract.\n\nWrite plan to .ai/runs/$KILROY_RUN_ID/plan_b.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        plan_c [
+            class="branch-c",
+            prompt="Create an implementation plan for the NEXRAD 3D point cloud viewer project.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, incorporate its lessons\n\nThe plan must cover ALL deliverables and acceptance criteria from the DoD.\n\nProject specifics: direnv + uv (Python), npm (JS), boto3 for S3, Py-ART for radar, Three.js for viewer. Validation scripts as committed deliverables. Test evidence contract.\n\nWrite plan to .ai/runs/$KILROY_RUN_ID/plan_c.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+
+        debate_consolidate [
+            auto_status=true,
+            prompt="Synthesize the three implementation plans into a single best-of-breed final plan.\n\nRead branch outputs: check parallel_results.json for worktree paths, then read plan_a.md, plan_b.md, plan_c.md. If parallel_results.json is missing, read from .ai/runs/$KILROY_RUN_ID/.\n\nAlso read:\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, verify plan addresses every identified issue\n\nResolve conflicts. Ensure dependency order. The final plan must cover all DoD acceptance criteria and integration test scenarios.\n\nThe plan must specify that implementation will be split across three parallel workers:\n1. implement_fetch: Python fetch CLI + environment setup (pyproject.toml, .envrc, .gitignore)\n2. implement_transform: Python transform CLI\n3. implement_viewer: JS Three.js viewer + viewer/package.json\nFollowed by merge_implementation to integrate, write validation scripts, and resolve conflicts.\n\nWrite to .ai/runs/$KILROY_RUN_ID/plan_final.md\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+    }
+
+    // =========================================================================
+    // State Detection Gate — idempotency pivot
+    // =========================================================================
+    subgraph cluster_detect {
+        label="State Detection"
+
+        detect_state [
+            shape=parallelogram,
+            max_retries=0,
+            tool_command="test -f src/nexrad_fetch/cli.py && test -f src/nexrad_transform/cli.py && test -f viewer/src/main.js && test -f scripts/validate-build.sh && test -f scripts/validate-test.sh && echo 'All deliverables present — skipping to verify' || { echo 'Missing deliverables — full build required'; exit 1; }"
+        ]
+        check_state [shape=diamond, label="Code exists?"]
+    }
+
+    // =========================================================================
+    // Implementation Fanout (3 modules + merge) — fresh builds only
+    // =========================================================================
+    subgraph cluster_implement {
+        label="Implementation"
+        node [shape=box]
+
+        implement_fanout [shape=component, label="Implement Fan-Out"]
+
+        implement_fetch [
+            class="hard",
+            auto_status=true,
+            max_agent_turns=300,
+            max_tokens=32768,
+            prompt="You are implementing the NEXRAD fetch CLI tool and project environment.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/plan_final.md (implementation plan)\n- .ai/runs/$KILROY_RUN_ID/spec.md (project spec)\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (acceptance criteria AC-1.1, AC-1.3, AC-1.4, AC-2.1 through AC-2.8)\n- docs/specs/NEXRAD-Level-II-ICD.md (Level II format reference)\n- docs/NEXRAD_TEST_CASES.md (S3 paths and access patterns)\n\nREPAIR MODE: If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, read it FIRST. Fix ONLY identified gaps. Do NOT regenerate working code. Preserve all passing code and tests. Before exiting, run sh scripts/validate-build.sh and re-read each targeted file to confirm the fix is present.\n\nFRESH MODE: If no postmortem exists, implement from plan_final.md.\n\nDeliverables:\n1. pyproject.toml at repo root — Python 3.10+, dependencies: arm-pyart, boto3, numpy. Dev: ruff. uv as package manager.\n2. .envrc at repo root — activates uv venv, sources .env.local if it exists.\n3. .gitignore — include .env.local, .venv/, __pycache__/, node_modules/, *.pyc, .ai/\n4. src/nexrad_fetch/__init__.py and src/nexrad_fetch/cli.py — Python CLI that accepts --site, --time, --output; uses boto3 for S3; lists scans; downloads; error handling; --help; exit codes.\n5. scripts/validate-build.sh — POSIX sh, verifies: uv sync, CLI --help, viewer build.\n\nLog progress to .ai/runs/$KILROY_RUN_ID/implementation_log.md\nWrite module summary to .ai/runs/$KILROY_RUN_ID/module_fetch_impl.md\nCommit all code.\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\",\"failure_signature\":\"...\"}"
+        ]
+
+        implement_transform [
+            class="hard",
+            auto_status=true,
+            max_agent_turns=300,
+            max_tokens=32768,
+            prompt="You are implementing the NEXRAD transform CLI tool.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/plan_final.md\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (AC-3.1 through AC-3.13)\n- docs/specs/PYART_API_REFERENCE.md, PLY_FORMAT_SPECIFICATION.md, NWS_REFLECTIVITY_COLOR_TABLE.md, NEXRAD-Level-II-ICD.md\n\nREPAIR MODE: If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, read it FIRST. Fix ONLY identified gaps. Preserve working code. Run sh scripts/validate-build.sh before exiting.\n\nFRESH MODE: Implement from plan_final.md.\n\nDeliverables:\n1. src/nexrad_transform/__init__.py and cli.py — Python CLI: --input (Level II), --output (PLY). Uses Py-ART to parse, iterates all sweeps/gates, converts polar→Cartesian via Py-ART coordinates (origin at radar antenna), places points at volumetric center of each gate, filters masked values, maps dBZ→RGB via NWS color table. Writes binary_little_endian PLY with float x/y/z + uchar r/g/b. Reports vertex count. Error handling, --help, exit codes.\n2. src/nexrad_transform/transform.py, colors.py, ply_writer.py as needed.\n\nLog to .ai/runs/$KILROY_RUN_ID/implementation_log.md\nWrite .ai/runs/$KILROY_RUN_ID/module_transform_impl.md\nCommit all code.\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\",\"failure_signature\":\"...\"}"
+        ]
+
+        implement_viewer [
+            class="hard",
+            auto_status=true,
+            max_agent_turns=300,
+            max_tokens=32768,
+            prompt="You are implementing the NEXRAD 3D point cloud viewer.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/plan_final.md\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (AC-4.1 through AC-4.6)\n\nREPAIR MODE: If .ai/runs/$KILROY_RUN_ID/postmortem_latest.md exists, read it FIRST. Fix ONLY identified gaps. Preserve working code.\n\nFRESH MODE: Implement from plan_final.md.\n\nDeliverables:\n1. viewer/package.json — three, vite\n2. viewer/index.html — full-viewport canvas\n3. viewer/src/main.js — Three.js scene, PerspectiveCamera, WebGLRenderer, OrbitControls, PLYLoader, file picker + URL param, vertex colors, window resize\n4. viewer/vite.config.js\n\nLog to .ai/runs/$KILROY_RUN_ID/implementation_log.md\nWrite .ai/runs/$KILROY_RUN_ID/module_viewer_impl.md\nCommit all code.\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\",\"failure_signature\":\"...\"}"
+        ]
+
+        merge_implementation [
+            auto_status=true,
+            prompt="Merge the outputs of the three parallel implementation workers.\n\nRead branch outputs: check parallel_results.json for worktree paths and head_sha values. Read module_fetch_impl.md, module_transform_impl.md, module_viewer_impl.md from branch worktrees. If parallel_results.json is missing, read from .ai/runs/$KILROY_RUN_ID/.\n\nFor each branch with changes (non-null head_sha):\n1. Inspect the branch worktree using git diff\n2. Merge or cherry-pick commits into the current worktree\n3. Resolve conflicts (especially pyproject.toml)\n\nAfter merging:\n1. Verify pyproject.toml has both CLI entries and all dependencies\n2. Verify .envrc, .gitignore, viewer/package.json exist\n3. Write/update scripts/validate-build.sh, validate-fmt.sh, validate-test.sh, validate-artifacts.sh as committed deliverables. Each script: #!/bin/sh, set -e, KILROY_VALIDATE_FAILURE trap.\n   - validate-build.sh: uv sync, CLI --help, viewer build\n   - validate-fmt.sh: ruff check + format check\n   - validate-test.sh: runs IT-1 through IT-7, writes evidence + manifest\n   - validate-artifacts.sh: validates manifest.json completeness\n\nCommit all merged code and scripts.\nLog to .ai/runs/$KILROY_RUN_ID/implementation_log.md\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\",\"failure_signature\":\"merge_conflicts\"}"
+        ]
+    }
+
+    // =========================================================================
+    // Verify chain
+    // =========================================================================
+    subgraph cluster_verify {
+        label="Verify"
+
+        fix_fmt [
+            shape=parallelogram,
+            max_retries=0,
+            tool_command="sh scripts/validate-fmt.sh 2>&1 || { uv run ruff format src/ && uv run ruff check --fix src/ && echo 'Auto-fixed formatting'; exit 0; } || { echo 'KILROY_VALIDATE_FAILURE: validate-fmt.sh missing or failed'; exit 1; }"
+        ]
+
+        verify_fmt [
+            shape=parallelogram,
+            max_retries=0,
+            tool_command="sh scripts/validate-fmt.sh || { echo 'KILROY_VALIDATE_FAILURE: validate-fmt.sh missing or failed'; exit 1; }"
+        ]
+        check_fmt [shape=diamond, label="Fmt OK?"]
+
+        verify_build [
+            shape=parallelogram,
+            tool_command="sh scripts/validate-build.sh || { echo 'KILROY_VALIDATE_FAILURE: validate-build.sh missing or failed'; exit 1; }"
+        ]
+        check_build [shape=diamond, label="Build OK?"]
+
+        verify_test [
+            shape=parallelogram,
+            tool_command="sh scripts/validate-test.sh || { echo 'KILROY_VALIDATE_FAILURE: validate-test.sh missing or failed'; exit 1; }"
+        ]
+        check_test [shape=diamond, label="Tests OK?"]
+
+        verify_artifacts [
+            shape=parallelogram,
+            max_retries=0,
+            tool_command="sh scripts/validate-artifacts.sh || { echo 'KILROY_VALIDATE_FAILURE: validate-artifacts.sh missing or failed'; exit 1; }"
+        ]
+        check_artifacts [shape=diamond, label="Artifacts OK?"]
+
+        verify_fidelity [
+            shape=box,
+            prompt="You are the semantic fidelity reviewer for the NEXRAD point cloud project.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (acceptance criteria)\n- .ai/runs/$KILROY_RUN_ID/spec.md (project spec)\n- .ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json (test results)\n- The actual implementation files: src/nexrad_fetch/, src/nexrad_transform/, viewer/\n\nVerify each acceptance criterion by ID against the implementation:\n\nAC-1.1: pyproject.toml + .envrc + uv sync — verify in src/\nAC-1.2: viewer/package.json + npm install — verify in viewer/\nAC-1.3: pyproject.toml declares pyart, boto3 — verify\nAC-1.4: .envrc exists and activates uv venv — verify\nAC-2.1: Fetch accepts --site and --time CLI args — verify in cli.py\nAC-2.2: Fetch lists scans near requested time — verify\nAC-2.3: Fetch downloads to --output path — verify\nAC-2.4: Downloaded file is valid gzip — verify logic exists\nAC-2.5: Exit 0/non-zero — verify\nAC-2.6: Error for invalid site — verify\nAC-2.7: Error for no scans found — verify\nAC-2.8: --help text — verify\nAC-3.1: Transform accepts --input and --output — verify\nAC-3.2: PLY header with x,y,z float + r,g,b uchar — verify\nAC-3.3: All elevation tilts included — verify sweep iteration\nAC-3.4: Empty gates filtered — verify masking logic\nAC-3.5: Py-ART coordinate transform with radar origin — verify\nAC-3.6: NWS color table mapping — verify dBZ->RGB\nAC-3.7: Active storm >100K vertices — check test evidence\nAC-3.8: Clear air <10K vertices — check test evidence\nAC-3.9: Exit codes — verify\nAC-3.10: Error for invalid input — verify\nAC-3.11: --help text — verify\nAC-3.12: Reports vertex count — verify\nAC-3.13: Gate center placement — verify Py-ART usage\nAC-4.1: Viewer serves web page — verify HTML/JS\nAC-4.2: Loads PLY via file picker or URL param — verify\nAC-4.3: Colored point cloud renders — verify Three.js setup\nAC-4.4: Orbit controls — verify OrbitControls\nAC-4.5: Zoom — verify\nAC-4.6: Pan — verify\nAC-5.1: E2E pipeline works — check test evidence IT-5\nAC-5.2: Layered elevation tilts visible — check test evidence IT-5\n\nAlso verify all MSG-1 through MSG-9 message surfaces exist in code.\n\nWrite results to .ai/runs/$KILROY_RUN_ID/verify_fidelity.md with per-AC pass/fail status.\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success (all pass): {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"Failed ACs: AC-X.Y, AC-Z.W\",\"failure_class\":\"deterministic_agent_bug\",\"failure_signature\":\"fidelity_AC-X.Y,AC-Z.W\"} — use sorted comma-separated AC IDs in failure_signature."
+        ]
+        check_impl [shape=diamond, label="Impl OK?"]
+    }
+
+    // =========================================================================
+    // Review Fanout
+    // =========================================================================
+    subgraph cluster_review {
+        label="Review Fanout"
+        node [shape=box]
+
+        review_fanout [shape=component, label="Review Fan-Out"]
+
+        review_a [
+            class="branch-a",
+            prompt="Review the NEXRAD point cloud viewer implementation against its Definition of Done.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md (all acceptance criteria)\n- .ai/runs/$KILROY_RUN_ID/verify_fidelity.md (semantic verification results)\n- .ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json (test results)\n- Implementation files: src/nexrad_fetch/, src/nexrad_transform/, viewer/, pyproject.toml, .envrc, scripts/\n\nCheck against ALL DoD criteria:\n- Environment (AC-1.x): direnv, uv, pyproject.toml, package.json\n- Fetch (AC-2.x): CLI interface, S3 download, error handling, help text\n- Transform (AC-3.x): Level II parsing, PLY output, gate center placement, NWS colors, filtering\n- Viewer (AC-4.x): Three.js rendering, PLY loading, orbit/zoom/pan\n- Integration (AC-5.x): end-to-end pipeline, layered tilts\n- All MSG-1 through MSG-9 message surfaces\n\nVerdict: APPROVED (all criteria met) or REJECTED (with specific gaps and evidence).\n\nWrite to .ai/runs/$KILROY_RUN_ID/review_a.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        review_b [
+            class="branch-b",
+            prompt="Review the NEXRAD point cloud viewer implementation against its Definition of Done.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- .ai/runs/$KILROY_RUN_ID/verify_fidelity.md\n- .ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json\n- Implementation files: src/nexrad_fetch/, src/nexrad_transform/, viewer/, pyproject.toml, .envrc, scripts/\n\nCheck against ALL DoD criteria (AC-1.x through AC-5.x, MSG-1 through MSG-9).\n\nVerdict: APPROVED or REJECTED with specific gaps.\n\nWrite to .ai/runs/$KILROY_RUN_ID/review_b.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+        review_c [
+            class="branch-c",
+            prompt="Review the NEXRAD point cloud viewer implementation against its Definition of Done.\n\nRead:\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- .ai/runs/$KILROY_RUN_ID/verify_fidelity.md\n- .ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json\n- Implementation files: src/nexrad_fetch/, src/nexrad_transform/, viewer/, pyproject.toml, .envrc, scripts/\n\nCheck against ALL DoD criteria (AC-1.x through AC-5.x, MSG-1 through MSG-9).\n\nVerdict: APPROVED or REJECTED with specific gaps.\n\nWrite to .ai/runs/$KILROY_RUN_ID/review_c.md\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn success: {\"status\":\"success\"}\nOn failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}"
+        ]
+
+        review_consensus [
+            auto_status=true,
+            goal_gate=true,
+            retry_target="postmortem",
+            prompt="Synthesize the three reviews into a consensus verdict.\n\nRead branch outputs: check parallel_results.json for worktree paths, then read review_a.md, review_b.md, review_c.md. If parallel_results.json missing, read from .ai/runs/$KILROY_RUN_ID/.\n\nAlso read .ai/runs/$KILROY_RUN_ID/definition_of_done.md for the criteria.\n\nConsensus rules:\n- 2+ APPROVED with no critical gaps -> {\"status\":\"success\"}\n- Otherwise -> {\"status\":\"rejected\"} with specific issues listed\n\nWrite consensus to .ai/runs/$KILROY_RUN_ID/review_consensus.md\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH).\nOn consensus approval: {\"status\":\"success\"}\nOn rejection: {\"status\":\"rejected\"} — do NOT write status:fail for rejections."
+        ]
+    }
+
+    // =========================================================================
+    // Targeted Repair (for verify/review failures on existing code)
+    // =========================================================================
+    subgraph cluster_repair {
+        label="Repair"
+        node [shape=box]
+
+        implement_repair [
+            class="hard",
+            auto_status=true,
+            max_agent_turns=300,
+            max_tokens=32768,
+            prompt="You are repairing the existing NEXRAD point cloud viewer implementation.\n\nRead .ai/runs/$KILROY_RUN_ID/postmortem_latest.md FIRST. It contains the specific issues to fix.\n\nAlso read:\n- .ai/runs/$KILROY_RUN_ID/spec.md\n- .ai/runs/$KILROY_RUN_ID/definition_of_done.md\n- .ai/runs/$KILROY_RUN_ID/plan_final.md (for architectural context)\n\nFix ONLY the issues identified in the postmortem. Do NOT regenerate working code. Do NOT rewrite files that are passing. Preserve all working code and tests.\n\nBefore exiting, run sh scripts/validate-build.sh and re-read each targeted file to confirm the fix is present.\n\nCommit fixes with descriptive commit messages.\n\nStatus contract: Write to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\",\"failure_signature\":\"...\"}"
+        ]
+    }
+
+    // =========================================================================
+    // Postmortem
+    // =========================================================================
+    subgraph cluster_postmortem {
+        label="Postmortem"
+        node [shape=box]
+
+        postmortem [
+            auto_status=true,
+            prompt="Analyze the pipeline failure and guide the next repair iteration.\n\nRead (in order of priority):\n1. .ai/runs/$KILROY_RUN_ID/review_consensus.md (if review stage reached)\n2. .ai/runs/$KILROY_RUN_ID/verify_fidelity.md (if semantic verify ran)\n3. .ai/runs/$KILROY_RUN_ID/test-evidence/latest/manifest.json — if present:\n   - For each failed or suspicious IT-* scenario, read listed artifacts\n   - Cite artifact file paths used as evidence\n   - If an artifact is missing/unreadable, record that as a finding\n4. .ai/runs/$KILROY_RUN_ID/implementation_log.md\n5. Branch review outputs via parallel_results.json if available\n\nProgress detection (REQUIRED):\n- Extract current failing AC IDs from verify_fidelity.md and/or review outputs\n- Read context key last_failing_acs (from previous postmortem iteration)\n- If failing AC set is IDENTICAL to last_failing_acs -> route needs_replan (zero progress)\n- If failing AC set is smaller/different OR first failure -> impl_repair\n- Include context_updates: {\"context_updates\":{\"last_failing_acs\":\"AC-X.Y,AC-Z.W\"}} (sorted)\n\nOutput:\n- Root causes, what worked (preserve), what failed (fix), concrete next changes\n- Do NOT direct from-scratch restart. Preserve all working code.\n\nOutcome classification:\n- impl_repair: code repair needed, plan/toolchain valid\n- needs_replan: plan inadequate OR zero progress detected\n- needs_toolchain: environment/bootstrap issue\n\nWrite to .ai/runs/$KILROY_RUN_ID/postmortem_latest.md (overwrite previous)\n\nWrite to $KILROY_STAGE_STATUS_PATH (fallback: $KILROY_STAGE_STATUS_FALLBACK_PATH) ONLY on failure: {\"status\":\"fail\",\"failure_reason\":\"...\",\"failure_class\":\"...\"}\n\nFor routing, write one of:\n{\"status\":\"impl_repair\",\"context_updates\":{\"last_failing_acs\":\"...\"}} or\n{\"status\":\"needs_replan\",\"context_updates\":{\"last_failing_acs\":\"...\"}} or\n{\"status\":\"needs_toolchain\",\"context_updates\":{\"last_failing_acs\":\"...\"}}"
+        ]
+    }
+
+    // =========================================================================
+    // Flow
+    // =========================================================================
+
+    // Bootstrap
+    start -> check_toolchain
+    check_toolchain -> expand_spec [condition="outcome=success"]
+    check_toolchain -> postmortem
+
+    expand_spec -> check_dod
+
+    // DoD (skip if exists)
+    check_dod -> plan_fanout [condition="outcome=has_dod"]
+    check_dod -> dod_fanout [condition="outcome=needs_dod"]
+    check_dod -> dod_fanout
+    dod_fanout -> dod_a
+    dod_fanout -> dod_b
+    dod_fanout -> dod_c
+    dod_a -> consolidate_dod
+    dod_b -> consolidate_dod
+    dod_c -> consolidate_dod
+    consolidate_dod -> plan_fanout
+
+    // Planning
+    plan_fanout -> plan_a
+    plan_fanout -> plan_b
+    plan_fanout -> plan_c
+    plan_a -> debate_consolidate
+    plan_b -> debate_consolidate
+    plan_c -> debate_consolidate
+
+    // State detection gate — idempotency pivot
+    debate_consolidate -> detect_state
+    detect_state -> check_state
+    check_state -> fix_fmt [condition="outcome=success"]
+    check_state -> implement_fanout
+
+    // Implementation fan-out (fresh builds only)
+    implement_fanout -> implement_fetch
+    implement_fanout -> implement_transform
+    implement_fanout -> implement_viewer
+    implement_fetch -> merge_implementation
+    implement_transform -> merge_implementation
+    implement_viewer -> merge_implementation
+    merge_implementation -> fix_fmt
+
+    // Verify chain (shared by both fresh and existing paths)
+    fix_fmt -> verify_fmt
+    verify_fmt -> check_fmt
+    check_fmt -> verify_build [condition="outcome=success"]
+    check_fmt -> postmortem
+
+    verify_build -> check_build
+    check_build -> verify_test [condition="outcome=success"]
+    check_build -> postmortem
+
+    verify_test -> check_test
+    check_test -> verify_artifacts [condition="outcome=success"]
+    check_test -> postmortem
+
+    verify_artifacts -> check_artifacts
+    check_artifacts -> verify_fidelity [condition="outcome=success"]
+    check_artifacts -> postmortem
+
+    verify_fidelity -> check_impl
+    check_impl -> review_fanout [condition="outcome=success"]
+    check_impl -> postmortem
+
+    // Review
+    review_fanout -> review_a
+    review_fanout -> review_b
+    review_fanout -> review_c
+    review_a -> review_consensus
+    review_b -> review_consensus
+    review_c -> review_consensus
+
+    // Consensus
+    review_consensus -> exit [condition="outcome=success"]
+    review_consensus -> postmortem
+
+    // Postmortem recovery routing
+    postmortem -> implement_repair [condition="outcome=impl_repair"]
+    postmortem -> plan_fanout [condition="outcome=needs_replan"]
+    postmortem -> check_toolchain [condition="outcome=needs_toolchain"]
+    postmortem -> implement_repair
+
+    // Repair -> back to verify
+    implement_repair -> fix_fmt
+}
