@@ -1,0 +1,85 @@
+version: 1
+
+graph: nexrad-pointcloud-v1.dot
+task: "Build NEXRAD 3D point cloud viewer: fetch, transform, and viewer CLI tools"
+
+repo:
+  path: /Users/dan/nexrad
+
+cxdb:
+  binary_addr: 127.0.0.1:9009
+  http_base_url: http://127.0.0.1:9010
+  autostart:
+    enabled: true
+    command: ["/Users/dan/nexrad/start-cxdb-server.sh"]
+    wait_timeout_ms: 20000
+    poll_interval_ms: 250
+    ui:
+      enabled: true
+      command: ["/Users/dan/nexrad/start-cxdb-ui.sh"]
+      url: "http://127.0.0.1:3000"
+
+llm:
+  cli_profile: real
+  providers:
+    openai:
+      backend: api
+    anthropic:
+      backend: api
+
+modeldb:
+  openrouter_model_info_path: /Users/dan/nexrad/openrouter_models.json
+  openrouter_model_info_update_policy: on_run_start
+  openrouter_model_info_url: https://openrouter.ai/api/v1/models
+  openrouter_model_info_fetch_timeout_ms: 5000
+
+git:
+  require_clean: false
+  run_branch_prefix: attractor/run
+  commit_per_node: true
+
+inputs:
+  materialize:
+    enabled: true
+    imports:
+      - pattern: "docs/**/*.md"
+        required: false
+    fan_in:
+      promote_run_scoped: []
+    follow_references: true
+    infer_with_llm: false
+
+artifact_policy:
+  profiles: ["python", "node"]
+  env:
+    managed_roots:
+      tool_cache_root: "managed"
+    overrides:
+      generic:
+        OPENAI_API_KEY: ""
+        ANTHROPIC_API_KEY: ""
+      python:
+        UV_CACHE_DIR: "{managed_roots.tool_cache_root}/uv-cache"
+      node:
+        NPM_CONFIG_CACHE: "{managed_roots.tool_cache_root}/npm-cache"
+  checkpoint:
+    exclude_globs:
+      - "**/__pycache__/**"
+      - "**/.venv/**"
+      - "**/node_modules/**"
+      - "**/.ai/**"
+
+runtime_policy:
+  stage_timeout_ms: 0
+  stall_timeout_ms: 600000
+  stall_check_interval_ms: 5000
+  max_llm_retries: 6
+
+preflight:
+  prompt_probes:
+    enabled: true
+    transports: [complete, stream]
+    timeout_ms: 15000
+    retries: 1
+    base_delay_ms: 500
+    max_delay_ms: 5000
