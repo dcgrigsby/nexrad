@@ -136,7 +136,7 @@ if [ "$FETCH_EXIT" -eq 0 ] && [ -f "$STORM_FILE" ]; then
   gunzip -t "$STORM_FILE" > /dev/null 2>&1
   GZIP_EXIT=$?
   set -e
-  python3 -c "
+  uv run python3 -c "
 import json, sys
 info = {
     'file': '$STORM_FILE',
@@ -148,7 +148,7 @@ json.dump(info, open('$EVIDENCE_ROOT/IT-1/downloaded_file_info.json', 'w'), inde
 print('[IT-1] fetch: PASS (size=%d, gzip_valid=%s)' % ($STORM_SIZE, $GZIP_EXIT == 0))
 "
 else
-  python3 -c "
+  uv run python3 -c "
 import json
 info = {'file': '$STORM_FILE', 'size_bytes': 0, 'gzip_valid': False, 'fetch_exit': $FETCH_EXIT, 'note': 'download failed or S3 unavailable'}
 json.dump(info, open('$EVIDENCE_ROOT/IT-1/downloaded_file_info.json', 'w'), indent=2)
@@ -173,7 +173,7 @@ if [ -f "$STORM_FILE" ]; then
 
   if [ "$TRANSFORM_EXIT" -eq 0 ] && [ -f "$STORM_PLY" ]; then
     head -10 "$STORM_PLY" > "$EVIDENCE_ROOT/IT-2/ply_header.txt"
-    python3 - "$STORM_PLY" "$EVIDENCE_ROOT/IT-2/ply_validation.json" << 'PYEOF'
+    uv run python3 - "$STORM_PLY" "$EVIDENCE_ROOT/IT-2/ply_validation.json" << 'PYEOF'
 import sys, json, re, numpy as np
 
 ply_path, out_path = sys.argv[1], sys.argv[2]
@@ -268,7 +268,7 @@ if [ -f "$CLEARAIR_FILE" ]; then
   echo "$CLEARAIR_EXIT" > "$EVIDENCE_ROOT/IT-3/transform_exit_code.txt"
 
   if [ "$CLEARAIR_EXIT" -eq 0 ] && [ -f "$CLEARAIR_PLY" ]; then
-    python3 - "$CLEARAIR_PLY" "$EVIDENCE_ROOT/IT-3/ply_validation.json" << 'PYEOF'
+    uv run python3 - "$CLEARAIR_PLY" "$EVIDENCE_ROOT/IT-3/ply_validation.json" << 'PYEOF'
 import sys, json, re
 
 ply_path, out_path = sys.argv[1], sys.argv[2]
@@ -337,7 +337,7 @@ if [ -f "$EVIDENCE_ROOT/IT-2/transform_stdout.log" ]; then
   cp "$EVIDENCE_ROOT/IT-2/transform_stdout.log" "$EVIDENCE_ROOT/IT-5/transform_stdout.log"
 fi
 
-python3 - "$EVIDENCE_ROOT/IT-5/pipeline_summary.json" \
+uv run python3 - "$EVIDENCE_ROOT/IT-5/pipeline_summary.json" \
   "$STORM_FILE" "$STORM_PLY" \
   "$EVIDENCE_ROOT/IT-2/ply_validation.json" << 'PYEOF'
 import sys, json, os, re
@@ -389,7 +389,7 @@ echo "[IT-5] pipeline: summary written (visual step requires manual browser)"
 # Write manifest.json
 # ============================================================
 echo "=== [validate-test] Writing manifest ==="
-python3 - "$EVIDENCE_ROOT/manifest.json" "$RUN_ID" << 'PYEOF'
+uv run python3 - "$EVIDENCE_ROOT/manifest.json" "$RUN_ID" << 'PYEOF'
 import json, sys
 out, run_id = sys.argv[1], sys.argv[2]
 manifest = {
