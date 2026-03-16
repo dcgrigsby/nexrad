@@ -1,4 +1,5 @@
 """CLI entry point for nexrad-fetch."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,8 +18,7 @@ def parse_datetime(value: str) -> datetime:
         except ValueError:
             continue
     raise argparse.ArgumentTypeError(
-        f"Cannot parse datetime '{value}'. Expected format: YYYYMMDD_HHMMSS "
-        f"(e.g. 20130520_201643)"
+        f"Cannot parse datetime '{value}'. Expected format: YYYYMMDD_HHMMSS (e.g. 20130520_201643)"
     )
 
 

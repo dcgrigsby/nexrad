@@ -3,6 +3,7 @@
 Colors from the NWS standard radar color table (dBZ → RGB).
 Values below 5 dBZ are treated as no-data and filtered.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,27 +13,25 @@ import numpy as np
 # Colors match the standard NWS WSR-88D color table.
 _COLOR_TABLE = [
     # dBZ range   R    G    B
-    (5, 10, 100, 235, 242),   # light grey-blue
-    (10, 15, 42, 144, 229),   # light blue
-    (15, 20, 30, 60, 255),    # blue
-    (20, 25, 18, 230, 18),    # light green
-    (25, 30, 0, 187, 0),      # green
-    (30, 35, 0, 130, 0),      # dark green
-    (35, 40, 255, 255, 0),    # yellow
-    (40, 45, 231, 192, 0),    # dark yellow
-    (45, 50, 255, 144, 0),    # orange
-    (50, 55, 255, 0, 0),      # red
-    (55, 60, 188, 0, 0),      # dark red
-    (60, 65, 144, 0, 0),      # very dark red
-    (65, 75, 255, 0, 255),    # magenta
-    (75, 200, 188, 0, 188),   # dark magenta
+    (5, 10, 100, 235, 242),  # light grey-blue
+    (10, 15, 42, 144, 229),  # light blue
+    (15, 20, 30, 60, 255),  # blue
+    (20, 25, 18, 230, 18),  # light green
+    (25, 30, 0, 187, 0),  # green
+    (30, 35, 0, 130, 0),  # dark green
+    (35, 40, 255, 255, 0),  # yellow
+    (40, 45, 231, 192, 0),  # dark yellow
+    (45, 50, 255, 144, 0),  # orange
+    (50, 55, 255, 0, 0),  # red
+    (55, 60, 188, 0, 0),  # dark red
+    (60, 65, 144, 0, 0),  # very dark red
+    (65, 75, 255, 0, 255),  # magenta
+    (75, 200, 188, 0, 188),  # dark magenta
 ]
 
 # Build lookup arrays for vectorized mapping
 _THRESHOLDS = np.array([entry[0] for entry in _COLOR_TABLE], dtype=np.float32)
-_COLORS = np.array(
-    [(r, g, b) for (_, _, r, g, b) in _COLOR_TABLE], dtype=np.uint8
-)
+_COLORS = np.array([(r, g, b) for (_, _, r, g, b) in _COLOR_TABLE], dtype=np.uint8)
 
 
 def dbz_to_rgb_vectorized(dbz: np.ndarray) -> np.ndarray:

@@ -1,7 +1,7 @@
 """PLY file writer for NEXRAD point cloud data."""
+
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 
 import numpy as np
@@ -46,14 +46,16 @@ def write_ply_ascii(
         f.write("end_header\n")
 
         # Write vertex data
-        data = np.column_stack([
-            x.astype(np.float32),
-            y.astype(np.float32),
-            z.astype(np.float32),
-            r.astype(np.uint8),
-            g.astype(np.uint8),
-            b.astype(np.uint8),
-        ])
+        data = np.column_stack(
+            [
+                x.astype(np.float32),
+                y.astype(np.float32),
+                z.astype(np.float32),
+                r.astype(np.uint8),
+                g.astype(np.uint8),
+                b.astype(np.uint8),
+            ]
+        )
         for row in data:
             f.write(
                 f"{row[0]:.2f} {row[1]:.2f} {row[2]:.2f} "
@@ -103,14 +105,16 @@ def write_ply_binary(
     ).encode("ascii")
 
     # Build structured array for efficient binary write
-    dtype = np.dtype([
-        ("x", "<f4"),
-        ("y", "<f4"),
-        ("z", "<f4"),
-        ("r", "u1"),
-        ("g", "u1"),
-        ("b", "u1"),
-    ])
+    dtype = np.dtype(
+        [
+            ("x", "<f4"),
+            ("y", "<f4"),
+            ("z", "<f4"),
+            ("r", "u1"),
+            ("g", "u1"),
+            ("b", "u1"),
+        ]
+    )
     data = np.empty(n, dtype=dtype)
     data["x"] = x.astype(np.float32)
     data["y"] = y.astype(np.float32)

@@ -1,4 +1,5 @@
 """Core S3 listing and download logic for NEXRAD Level II files."""
+
 from __future__ import annotations
 
 import re
@@ -34,9 +35,9 @@ class ScanInfo:
         if not m:
             return None
         try:
-            return datetime.strptime(
-                f"{m.group(1)}{m.group(2)}", "%Y%m%d%H%M%S"
-            ).replace(tzinfo=timezone.utc)
+            return datetime.strptime(f"{m.group(1)}{m.group(2)}", "%Y%m%d%H%M%S").replace(
+                tzinfo=timezone.utc
+            )
         except ValueError:
             return None
 

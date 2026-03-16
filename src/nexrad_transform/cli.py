@@ -1,4 +1,5 @@
 """CLI entry point for nexrad-transform."""
+
 from __future__ import annotations
 
 import argparse
