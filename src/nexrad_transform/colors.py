@@ -12,18 +12,21 @@ import numpy as np
 # Each entry: (min_dbz, max_dbz, R, G, B)
 # Colors match the standard NWS WSR-88D color table.
 _COLOR_TABLE = [
-    # dBZ range      R    G    B   — spec §3.4
-    (5, 10, 0, 150, 255),  # Blue
-    (10, 15, 0, 200, 0),  # Green
-    (15, 20, 100, 255, 0),  # Lime Green
-    (20, 25, 255, 255, 0),  # Yellow
-    (25, 30, 255, 165, 0),  # Orange
-    (30, 35, 255, 100, 0),  # Red-Orange
-    (35, 40, 255, 0, 0),  # Red
-    (40, 45, 180, 0, 0),  # Dark Red
-    (45, 50, 255, 0, 255),  # Magenta
-    (50, 55, 138, 43, 226),  # Violet
-    (55, 200, 255, 255, 255),  # White
+    # dBZ range   R    G    B
+    (5, 10, 100, 235, 242),  # light grey-blue
+    (10, 15, 42, 144, 229),  # light blue
+    (15, 20, 30, 60, 255),  # blue
+    (20, 25, 18, 230, 18),  # light green
+    (25, 30, 0, 187, 0),  # green
+    (30, 35, 0, 130, 0),  # dark green
+    (35, 40, 255, 255, 0),  # yellow
+    (40, 45, 231, 192, 0),  # dark yellow
+    (45, 50, 255, 144, 0),  # orange
+    (50, 55, 255, 0, 0),  # red
+    (55, 60, 188, 0, 0),  # dark red
+    (60, 65, 144, 0, 0),  # very dark red
+    (65, 75, 255, 0, 255),  # magenta
+    (75, 200, 188, 0, 188),  # dark magenta
 ]
 
 # Build lookup arrays for vectorized mapping
