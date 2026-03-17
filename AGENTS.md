@@ -135,6 +135,8 @@ Instead of manually asking for status every few minutes, create a scheduled task
 
 This pattern replaces the need to re-open a session and ask "status" — the monitoring task reports proactively.
 
+**Where to read the output:** Monitoring task output appears in the **Scheduled** section of the Claude Code sidebar, not in the active chat session. The current conversation will not receive task output automatically. Check the sidebar to see status reports; each run appears as a separate entry, newest at the top.
+
 ### Monitoring task template
 
 ```
