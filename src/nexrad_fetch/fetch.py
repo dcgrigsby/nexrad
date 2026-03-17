@@ -15,6 +15,26 @@ from botocore.config import Config
 # NEXRAD site codes: 4-letter uppercase ICAO identifiers
 SITE_RE = re.compile(r"^[A-Z]{4}$")
 
+# Complete list of operational WSR-88D NEXRAD sites (ICAO codes)
+KNOWN_NEXRAD_SITES = frozenset([
+    "KABR", "KABX", "KAKQ", "KAMA", "KAMX", "KAPX", "KARX", "KATX", "KBBX", "KBGM",
+    "KBHX", "KBIS", "KBLX", "KBMX", "KBOX", "KBRO", "KBUF", "KBYX", "KCAE", "KCBW",
+    "KCBX", "KCCX", "KCLE", "KCLX", "KCRP", "KCXX", "KCYS", "KDAX", "KDDC", "KDFX",
+    "KDGX", "KDIX", "KDLH", "KDMX", "KDOX", "KDTX", "KDVN", "KDYX", "KEAX", "KEMX",
+    "KENX", "KEOX", "KEPZ", "KESX", "KEVX", "KEWX", "KEYX", "KFCX", "KFDR", "KFDX",
+    "KFFC", "KFSD", "KFSX", "KFTG", "KFWS", "KGGW", "KGJX", "KGLD", "KGRB", "KGRK",
+    "KGRR", "KGSP", "KGWX", "KGYX", "KHDX", "KHGX", "KHNX", "KHPX", "KHTX", "KICT",
+    "KICX", "KILN", "KILX", "KIND", "KINX", "KIWA", "KIWX", "KJAX", "KJGX", "KJKL",
+    "KLBB", "KLCH", "KLGX", "KLIX", "KLNX", "KLOT", "KLRX", "KLSX", "KLTX", "KLVX",
+    "KLWX", "KLZK", "KMAF", "KMAX", "KMBX", "KMHX", "KMKX", "KMLB", "KMOB", "KMPX",
+    "KMQT", "KMRX", "KMSX", "KMTX", "KMUX", "KMVX", "KMXX", "KNKX", "KNQA", "KOAX",
+    "KOHX", "KOKX", "KOTX", "KPAH", "KPBZ", "KPDT", "KPOE", "KPUX", "KRAX", "KRGX",
+    "KRIW", "KRLX", "KSFX", "KSGF", "KSHV", "KSJT", "KSOX", "KSRX", "KTBW", "KTFX",
+    "KTLX", "KTWX", "KTYX", "KUDX", "KUEX", "KVAX", "KVBX", "KVNX", "KVTX", "KVWX",
+    "KYUX", "PABC", "PACG", "PAEC", "PAHG", "PAIH", "PAKC", "PAPD", "PGUA",
+    "PHKI", "PHKM", "PHMO", "PHWA", "TJUA",
+])
+
 # S3 bucket and prefix format
 BUCKET = "noaa-nexrad-level2"
 
@@ -57,6 +77,11 @@ def validate_site(site: str) -> None:
         raise ValueError(
             f"Invalid site code '{site}'. Expected a 4-letter uppercase ICAO "
             f"identifier (e.g. KTLX, KFWS)."
+        )
+    if site not in KNOWN_NEXRAD_SITES:
+        raise ValueError(
+            f"Unknown NEXRAD site code '{site}'. "
+            f"Use a valid WSR-88D site code (e.g. KTLX, KFWS)."
         )
 
 
