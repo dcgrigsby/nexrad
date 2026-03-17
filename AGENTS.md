@@ -100,6 +100,60 @@ Claude Code ships with superpowers skills (brainstorming, writing-plans, executi
 | `verification-before-completion` | Phase 2→3 — verifying pipeline setup before a run | — |
 | `using-git-worktrees` | Any phase — isolating factory changes | — |
 
+## Session Handoff and Run Monitoring
+
+Long-running Kilroy pipelines span multiple Claude Code sessions. Use this pattern to hand off cleanly and stay informed without manual polling.
+
+### Handoff prompt (end of session)
+
+When wrapping up a session where a run was launched or is in progress, produce a self-contained handoff block that the next session can execute immediately:
+
+```
+**Handoff: <one-line intent>**
+**What to do:**
+  <exact shell command to resume or launch>
+**Existing implementation (already merged):**
+  <key files and what they do>
+**How the graph works:**
+  <routing logic — especially any detect/skip shortcuts>
+**Key config details:**
+  <env loading, model choices, any known gotchas>
+**Reference docs:**
+  <paths to spec, DoD, design docs>
+```
+
+The next session should be able to copy-paste the command and run it cold.
+
+### Scheduled run monitoring
+
+Instead of manually asking for status every few minutes, create a scheduled task (via the `anthropic-skills:schedule` skill) immediately after launching a detached run:
+
+- **Frequency:** 5 minutes is the recommended default; use 10 minutes for low-risk runs.
+- **Prompt must include:** run ID, logs root, repo path, expected graph stage sequence, and what to watch for (failures, key routing decisions, stalls).
+- **Auto-disable:** the task prompt should instruct the agent to note when the run reaches a final state (`success` or terminal failure) so the task can be disabled.
+- **Failure action:** if the task detects a failure or stall, it should surface the `failure_reason` from `status.json` and suggest whether to resume or investigate.
+
+This pattern replaces the need to re-open a session and ask "status" — the monitoring task reports proactively.
+
+### Monitoring task template
+
+```
+You are monitoring a Kilroy Attractor run.
+
+Run ID: <id>
+Logs root: <path>
+Repo: <path>
+
+Steps:
+1. kilroy attractor status --logs-root <path>
+2. tail -20 <path>/progress.ndjson  (extract node, completions, errors)
+3. ls <path>/  (new stage directories = completed stages)
+4. If state=failed: cat <path>/final.json
+
+Report: state, current node, new completions, any failures with failure_reason.
+If final state reached: note run is complete and disable task <task-id>.
+```
+
 ## Agent Behavior and Safety
 
 - **Bias for clarity over cleverness**
