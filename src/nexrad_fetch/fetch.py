@@ -16,7 +16,7 @@ from botocore.config import Config
 SITE_RE = re.compile(r"^[A-Z]{4}$")
 
 # S3 bucket and prefix format
-BUCKET = "noaa-nexrad-level2"
+BUCKET = "unidata-nexrad-level2"
 
 
 @dataclass
