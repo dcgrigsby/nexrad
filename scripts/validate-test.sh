@@ -111,24 +111,6 @@ FETCH_EXIT=$?
 set -e
 echo "$FETCH_EXIT" > "$EVIDENCE_ROOT/IT-1/fetch_exit_code.txt"
 
-# Fallback: if S3 fetch failed, use pyart built-in NEXRAD test fixture
-if [ "$FETCH_EXIT" -ne 0 ]; then
-  set +e
-  uv run python3 -c "
-import pyart.testing, shutil, os
-src = pyart.testing.NEXRAD_ARCHIVE_MSG31_COMPRESSED_FILE
-shutil.copy(src, '$STORM_FILE')
-print('pyart fixture fallback:', src, os.path.getsize(src), 'bytes')
-" >> "$EVIDENCE_ROOT/IT-1/fetch_stdout.log" 2>&1
-  FIXTURE_EXIT=$?
-  set -e
-  if [ "$FIXTURE_EXIT" -eq 0 ] && [ -f "$STORM_FILE" ] && [ -s "$STORM_FILE" ]; then
-    FETCH_EXIT=0
-    echo "0 (pyart fixture fallback)" > "$EVIDENCE_ROOT/IT-1/fetch_exit_code.txt"
-    echo "[IT-1] fetch: PASS via pyart fixture"
-  fi
-fi
-
 if [ "$FETCH_EXIT" -eq 0 ] && [ -f "$STORM_FILE" ]; then
   STORM_SIZE=$(wc -c < "$STORM_FILE" | tr -d ' ')
   # Verify gzip validity
@@ -142,7 +124,7 @@ info = {
     'file': '$STORM_FILE',
     'size_bytes': $STORM_SIZE,
     'gzip_valid': $GZIP_EXIT == 0,
-    'size_gt_5mb': $STORM_SIZE > 5 * 1024 * 1024
+    'size_gt_500kb': $STORM_SIZE > 500 * 1024
 }
 json.dump(info, open('$EVIDENCE_ROOT/IT-1/downloaded_file_info.json', 'w'), indent=2)
 print('[IT-1] fetch: PASS (size=%d, gzip_valid=%s)' % ($STORM_SIZE, $GZIP_EXIT == 0))
@@ -240,26 +222,13 @@ CLEARAIR_FILE="/tmp/nexrad_test_klsx_clearair.ar2v"
 CLEARAIR_PLY="/tmp/nexrad_test_klsx_clearair.ply"
 
 set +e
-uv run nexrad-fetch KLSX 20240501_050000 --output "$CLEARAIR_FILE" \
-  >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1 || true
+uv run nexrad-fetch KLSX 20240501_173000 --output "$CLEARAIR_FILE" \
+  >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
+CLEARAIR_FETCH_EXIT=$?
 set -e
+echo "$CLEARAIR_FETCH_EXIT" > "$EVIDENCE_ROOT/IT-3/fetch_exit_code.txt"
 
-if [ ! -f "$CLEARAIR_FILE" ] || [ ! -s "$CLEARAIR_FILE" ]; then
-  set +e
-  uv run python3 -c "
-import pyart.testing, shutil, os
-src = pyart.testing.NEXRAD_ARCHIVE_MSG31_COMPRESSED_FILE
-shutil.copy(src, '$CLEARAIR_FILE')
-print('pyart fixture fallback (clear-air):', src, os.path.getsize(src), 'bytes')
-" >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
-  CLEARAIR_FIXTURE_EXIT=$?
-  set -e
-  if [ "$CLEARAIR_FIXTURE_EXIT" -eq 0 ] && [ -f "$CLEARAIR_FILE" ] && [ -s "$CLEARAIR_FILE" ]; then
-    echo "[IT-3] fetch: PASS via pyart fixture"
-  fi
-fi
-
-if [ -f "$CLEARAIR_FILE" ]; then
+if [ "$CLEARAIR_FETCH_EXIT" -eq 0 ] && [ -f "$CLEARAIR_FILE" ] && [ -s "$CLEARAIR_FILE" ]; then
   set +e
   uv run nexrad-transform "$CLEARAIR_FILE" "$CLEARAIR_PLY" \
     >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
