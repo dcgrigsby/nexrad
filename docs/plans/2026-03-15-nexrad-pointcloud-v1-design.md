@@ -10,12 +10,12 @@ Three CLI tools:
 
 ### 1. Fetch Tool (Python)
 
-Downloads a NEXRAD Level II archive file from NOAA's public S3 bucket (`s3://noaa-nexrad-level2/`).
+Downloads a NEXRAD Level II archive file from NOAA's S3 bucket (`s3://noaa-nexrad-level2/`).
 
 - Input: radar site code (e.g., `KATX`) + date/time
 - Output: raw Level II binary file
 - Lists available scans near the requested time
-- No authentication required (public bucket)
+- **Authentication required:** AWS credentials must be present in the environment (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`). The bucket no longer permits anonymous access. Credentials are loaded from `.env.local` (gitignored) via `direnv` / `source .env.local`. The tool must exit non-zero with a clear error message when credentials are absent or invalid.
 - Dependencies: `boto3`
 
 ### 2. Transform Tool (Python)

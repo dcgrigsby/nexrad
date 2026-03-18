@@ -20,7 +20,7 @@
 
 ### Assumptions
 
-- Network access to `s3://noaa-nexrad-level2/` (public, no auth)
+- Network access to `s3://noaa-nexrad-level2/` with valid AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` in environment). The bucket no longer permits anonymous access. Credentials are loaded from `.env.local` (gitignored) via `source .env.local` or direnv.
 - Python 3.10+ available via uv
 - Node.js 18+ available for viewer build/dev
 - direnv installed on the development machine
@@ -53,13 +53,14 @@
 | ID | Criterion | Covered by |
 |----|-----------|------------|
 | AC-2.1 | Fetch tool accepts a site code and date/time as CLI arguments | IT-1, IT-5 |
-| AC-2.2 | Fetch tool lists available scans near the requested time from S3 | IT-1 |
+| AC-2.2 | Fetch tool lists available scans near the requested time from S3 using AWS credentials from the environment | IT-1 |
 | AC-2.3 | Fetch tool downloads a Level II archive file to a specified output path | IT-1, IT-5 |
 | AC-2.4 | Downloaded file is a valid gzip archive containing Level II data | IT-1, IT-5 |
 | AC-2.5 | Fetch tool exits 0 on success and non-zero on failure | IT-1, IT-6 |
 | AC-2.6 | Fetch tool displays an error message when given an invalid site code | IT-6 |
 | AC-2.7 | Fetch tool displays an error message when no scans are found for the given time | IT-6 |
 | AC-2.8 | Fetch tool displays help text when invoked with `--help` | IT-6 |
+| AC-2.9 | Fetch tool exits non-zero with a clear error message when AWS credentials are absent or invalid (must not silently fall back to fixture data or any substitute) | IT-6 |
 
 ### Transform (AC-3)
 
@@ -128,20 +129,22 @@
 
 **Surface:** `non_ui`
 
-**Starting state:** Network access to S3. No local files.
+**Prerequisites:** AWS credentials present in environment (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`). If credentials are absent, this scenario must **fail** — no fallback to fixture data or synthetic files is permitted.
+
+**Starting state:** Network access to S3 with valid AWS credentials. No local files.
 
 **Actions:**
 1. Run fetch tool with site `KTLX` (Oklahoma City) and date `2013-05-20T20:00Z` (Moore tornado) → tool lists available scans, selects closest, downloads file
-2. Verify downloaded file exists and is >5MB
+2. Verify downloaded file exists and is >5MB (a pyart fixture or any test stub will be much smaller — reject files ≤500KB)
 3. Verify file is valid gzip (`gunzip -t` exits 0)
 4. Verify tool printed scan listing (MSG-2) and success message with path and size (MSG-3)
 
-**Verification:** Fetch command exits 0. Downloaded file passes gzip validation.
+**Verification:** Fetch command exits 0. Downloaded file is >5MB and passes gzip validation. **A file ≤500KB is evidence of fixture fallback and must cause the scenario to fail.**
 
 **Evidence artifacts:**
 - `IT-1/fetch_stdout.log` — full stdout capture
 - `IT-1/fetch_exit_code.txt` — exit code
-- `IT-1/downloaded_file_info.json` — file name, size, gzip validity
+- `IT-1/downloaded_file_info.json` — file name, size in bytes, gzip validity (must include `"size_bytes"` for validation)
 
 ---
 
@@ -221,7 +224,9 @@
 
 **Surface:** `mixed`
 
-**Starting state:** Network access. No local files. Viewer not running.
+**Prerequisites:** AWS credentials present in environment (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`). The fetch step must succeed with a real S3 download — fixture fallback is not acceptable here.
+
+**Starting state:** Network access to S3 with valid AWS credentials. No local files. Viewer not running.
 
 **Actions:**
 1. Run fetch tool with site `KTLX` and date `2013-05-20T20:00Z` → downloads Level II file
@@ -251,8 +256,9 @@
 1. Run fetch with `--help` → verify help text displays (MSG-1)
 2. Run fetch with invalid site code `ZZZZ` → verify error message (MSG-4) and non-zero exit
 3. Run fetch with valid site but impossible date `1900-01-01T00:00Z` → verify "no scans found" message (MSG-5) and non-zero exit
+4. Run fetch with credentials unset (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` absent from environment) → verify non-zero exit and a clear error message indicating missing/invalid credentials (AC-2.9)
 
-**Verification:** All three invocations produce expected messages and exit codes.
+**Verification:** All four invocations produce expected messages and exit codes.
 
 **Evidence artifacts:**
 - `IT-6/help_stdout.log` — help text output
