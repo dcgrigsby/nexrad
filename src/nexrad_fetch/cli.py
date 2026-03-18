@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="nexrad-fetch",
         description=(
-            "Download NEXRAD Level II archive files from s3://unidata-nexrad-level2/.\n\n"
+            "Download NEXRAD Level II archive files from s3://noaa-nexrad-level2/.\n\n"
             "Given a site code and a date/time, lists available scans near that time\n"
             "and downloads the closest matching scan."
         ),

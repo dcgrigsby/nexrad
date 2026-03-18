@@ -16,10 +16,7 @@ from botocore.config import Config
 SITE_RE = re.compile(r"^[A-Z]{4}$")
 
 # S3 bucket and prefix format
-BUCKET = "unidata-nexrad-level2"
-
-# NEXRAD site codes start with these ICAO prefixes.
-NEXRAD_PREFIXES = frozenset("KPT")
+BUCKET = "noaa-nexrad-level2"
 
 
 @dataclass
@@ -60,11 +57,6 @@ def validate_site(site: str) -> None:
         raise ValueError(
             f"Invalid site code '{site}'. Expected a 4-letter uppercase ICAO "
             f"identifier (e.g. KTLX, KFWS)."
-        )
-    if site[0] not in NEXRAD_PREFIXES:
-        raise ValueError(
-            f"Invalid site code '{site}'. NEXRAD sites start with K, P, or T "
-            f"(e.g. KTLX, PHKM, TJUA)."
         )
 
 
