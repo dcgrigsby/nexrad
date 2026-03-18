@@ -218,11 +218,11 @@ fi
 # ============================================================
 echo "=== [validate-test] IT-3: Fetch + transform clear-air scan ==="
 
-CLEARAIR_FILE="/tmp/nexrad_test_klsx_clearair.ar2v"
-CLEARAIR_PLY="/tmp/nexrad_test_klsx_clearair.ply"
+CLEARAIR_FILE="/tmp/nexrad_test_kvtx_clearair.ar2v"
+CLEARAIR_PLY="/tmp/nexrad_test_kvtx_clearair.ply"
 
 set +e
-uv run nexrad-fetch KLSX 20240115_060000 --output "$CLEARAIR_FILE" \
+uv run nexrad-fetch KVTX 20240115_000000 --output "$CLEARAIR_FILE" \
   >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
 CLEARAIR_FETCH_EXIT=$?
 set -e
