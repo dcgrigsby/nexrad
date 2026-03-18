@@ -222,7 +222,7 @@ CLEARAIR_FILE="/tmp/nexrad_test_klsx_clearair.ar2v"
 CLEARAIR_PLY="/tmp/nexrad_test_klsx_clearair.ply"
 
 set +e
-uv run nexrad-fetch KLSX 20240501_173000 --output "$CLEARAIR_FILE" \
+uv run nexrad-fetch KLSX 20240115_060000 --output "$CLEARAIR_FILE" \
   >> "$EVIDENCE_ROOT/IT-3/transform_stdout.log" 2>&1
 CLEARAIR_FETCH_EXIT=$?
 set -e
@@ -268,7 +268,7 @@ PYEOF
     echo "[IT-3] clear-air: RESULT inconclusive (exit=$CLEARAIR_EXIT)"
   fi
 else
-  echo "{\"note\": \"skipped - clear-air file not downloaded\"}" > "$EVIDENCE_ROOT/IT-3/ply_validation.json"
+  echo "{\"note\": \"skipped - clear-air file not downloaded\", \"fetch_exit_code\": $CLEARAIR_FETCH_EXIT}" > "$EVIDENCE_ROOT/IT-3/ply_validation.json"
   echo "[IT-3] clear-air: SKIPPED (no clear-air file)"
 fi
 
