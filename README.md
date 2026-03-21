@@ -2,7 +2,7 @@
 
 Convert NEXRAD Level II weather radar data into 3D point clouds and visualize them interactively in your browser.
 
-[Watch demo video](https://github.com/dcgrigsby/nexrad/releases/download/v0.1.0/nexrad-viewer-demo.mov) (13 MB)
+[Watch demo video](https://daysuntilmigration.com/nexrad/)
 
 ## Tools
 
