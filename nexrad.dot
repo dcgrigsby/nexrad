@@ -9,11 +9,11 @@ digraph nexrad_pointcloud {
         loop_restart_persist_keys="last_failing_acs",
         loop_restart_signature_limit=5,
         model_stylesheet="
-            * { llm_model: claude-sonnet-4.6; llm_provider: anthropic; }
-            .hard { llm_model: gpt-5.3-codex; llm_provider: openai; }
-            .branch-a { llm_model: claude-opus-4.6; llm_provider: anthropic; }
-            .branch-b { llm_model: gpt-5.3-codex; llm_provider: openai; }
-            .branch-c { llm_model: gpt-5.4; llm_provider: openai; }
+            * { llm_model: qwen3.5; llm_provider: openai; }
+            .hard { llm_model: qwen3-coder:30b; llm_provider: openai; }
+            .branch-a { llm_model: qwen3:30b; llm_provider: openai; }
+            .branch-b { llm_model: qwen3-coder:30b; llm_provider: openai; }
+            .branch-c { llm_model: gemma4:26b; llm_provider: openai; }
         "
     ]
 

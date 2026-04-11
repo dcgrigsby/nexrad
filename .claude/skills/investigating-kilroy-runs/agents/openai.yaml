@@ -1,0 +1,4 @@
+interface:
+  display_name: "Investigate Kilroy Runs"
+  short_description: "Diagnose active and failed Attractor runs"
+  default_prompt: "Use $investigating-kilroy-runs to diagnose an active or failed Kilroy Attractor run."

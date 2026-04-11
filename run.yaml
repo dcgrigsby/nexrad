@@ -1,22 +1,22 @@
 version: 1
 
-graph: nexrad-pointcloud-v1.dot
+graph: nexrad.dot
 task: "Build NEXRAD 3D point cloud viewer: fetch, transform, and viewer CLI tools"
 
 repo:
-  path: /Users/dan/nexrad
+  path: /Users/dan/Desktop/nexrad
 
 cxdb:
   binary_addr: 127.0.0.1:9009
   http_base_url: http://127.0.0.1:9010
   autostart:
     enabled: true
-    command: ["/Users/dan/nexrad/start-cxdb-server.sh"]
+    command: ["/Users/dan/Desktop/nexrad/start-cxdb-server.sh"]
     wait_timeout_ms: 20000
     poll_interval_ms: 250
     ui:
       enabled: true
-      command: ["/Users/dan/nexrad/start-cxdb-ui.sh"]
+      command: ["/Users/dan/Desktop/nexrad/start-cxdb-ui.sh"]
       url: "http://127.0.0.1:3000"
 
 llm:
@@ -24,11 +24,9 @@ llm:
   providers:
     openai:
       backend: api
-    anthropic:
-      backend: api
 
 modeldb:
-  openrouter_model_info_path: /Users/dan/nexrad/openrouter_models.json
+  openrouter_model_info_path: /Users/dan/Desktop/nexrad/openrouter_models.json
   openrouter_model_info_update_policy: on_run_start
   openrouter_model_info_url: https://openrouter.ai/api/v1/models
   openrouter_model_info_fetch_timeout_ms: 5000
@@ -57,7 +55,6 @@ artifact_policy:
     overrides:
       generic:
         OPENAI_API_KEY: ""
-        ANTHROPIC_API_KEY: ""
       python:
         UV_CACHE_DIR: "{managed_roots.tool_cache_root}/uv-cache"
       node:
